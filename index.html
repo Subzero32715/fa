@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Steal a BRAINROT Unblocked</title>
+<style>
+body { margin:0; font-family:sans-serif; background:#111; color:white; }
+h1,h2,h3 { margin:0; padding:0; }
+button { padding:6px 12px; margin:4px; cursor:pointer; background:#222; color:white; border:1px solid #555; border-radius:4px; }
+input { padding:6px; border-radius:4px; border:1px solid #555; background:#eee; color:black; }
+#loginPage, #gamePage, #leaderboardPage { display:none; position:absolute; top:0; left:0; width:100%; height:100%; padding:20px; box-sizing:border-box; }
+#loginPage { display:flex; justify-content:center; align-items:center; flex-direction:column; background:green; }
+#topBar { position:fixed; top:10px; left:50%; transform:translateX(-50%); color:white; font-size:18px; text-align:center; z-index:10; }
+#money,#mps,#multiplier { font-weight:bold; }
+#buttons { position:fixed; top:50px; left:10px; display:flex; flex-direction:column; gap:10px; z-index:40; }
+#carpet { position:absolute; bottom:50px; left:0; width:100%; height:150px; background:red; overflow:hidden; z-index:5; border-top:4px solid #700; }
+#base { position:absolute; bottom:220px; left:50px; width:400px; min-height:140px; background:green; display:flex; flex-wrap:wrap; align-items:center; padding:10px; border:6px solid #777; z-index:30; gap:4px; }
+.slot { width:48px; height:48px; background:#555; display:flex; align-items:center; justify-content:center; color:white; font-size:20px; border-radius:6px; cursor:pointer; }
+.slot.empty{opacity:0.5}
+.brainrot { position:absolute; transition: transform 2000ms linear; cursor:pointer; text-align:center; color:white; font-size:14px; z-index:20; width:140px; }
+.brainrot .rarity{font-size:12px}
+.brainrot .name{font-size:13px;font-weight:700}
+.brainrot .mps, .brainrot .price{font-size:12px}
+#shopGUI, #rebirthGUI, #wheelGUI, #indexGUI, #ownerGUI { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#222; color:white; padding:20px; display:none; z-index:200; width:420px; max-height:80vh; overflow:auto; border:3px solid #444; }
+#eventTimer { position:fixed; bottom:10px; right:10px; color:white; font-size:16px; z-index:9999; }
+.leaderboardItem { margin:2px 0; padding:4px; border-bottom:1px solid #555; }
+.brainrot.eventActive { animation: sparkle 1s infinite alternate; }
+@keyframes sparkle { 0% { box-shadow: 0 0 5px 1px gold; } 50% { box-shadow: 0 0 12px 3px gold; } 100% { box-shadow: 0 0 5px 1px gold; } }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <h1>Steal a BRAINROT Unblocked</h1>
+  <input type="text" id="username" placeholder="Username"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button id="createAccountBtn">Create Account</button>
+  <button id="loginBtn">Log In</button>
+  <button id="guestBtn">Play as Guest</button>
+  <div class="g_id_signin"></div>
+  <div id="loginMsg" style="margin-top:10px;color:red;"></div>
+</div>
+
+<!-- GAME PAGE -->
+<div id="gamePage">
+  <div id="topBar">
+    <div id="money">Money: 500 Lira</div>
+    <div id="mps">MPS: 0</div>
+    <div id="multiplier">Multiplier: 1.0</div>
+  </div>
+  <div id="buttons">
+    <button id="shopBtn">Shop</button>
+    <button id="rebirthBtn">Rebirth</button>
+    <button id="wheelBtn">Wheel</button>
+    <button id="indexBtn">Index</button>
+    <button id="ownerBtn" style="display:none;">Owner Panel</button>
+    <button id="leaderboardBtn">Leaderboard</button>
+  </div>
+  <div id="carpet"></div>
+  <div id="base"></div>
+  <div id="shopGUI"><h3>Shop</h3><div id="shopContent"></div><input id="shopCode" placeholder="Enter Code"><button onclick="closeShop()">Close</button></div>
+  <div id="rebirthGUI"><h3>Rebirth</h3><div id="rebirthContent"></div><button onclick="closeRebirth()">Close</button></div>
+  <div id="wheelGUI"><h3>Wheel</h3><div id="wheelContent"></div><button onclick="closeWheel()">Close</button></div>
+  <div id="indexGUI"><h3>Index</h3><div id="indexContent"></div><button onclick="closeIndex()">Close</button></div>
+  <div id="ownerGUI"><h3>Owner Panel</h3><button id="setMoneyBtn">Set Money</button><button id="setSubBtn">Set Sub Coins</button><button id="setLuckBtn">Set Luck</button><button id="createBrainrotBtn">Create BRAINROT</button><button id="summonBrainrotBtn">Summon BRAINROT</button><button id="startEventBtn">Start Event</button><button onclick="closeOwner()">Close</button></div>
+  <div id="eventTimer"></div>
+</div>
+
+<!-- LEADERBOARD PAGE -->
+<div id="leaderboardPage">
+  <h2>Leaderboard</h2>
+  <div id="leaderboardList"></div>
+  <button onclick="showGamePage()">Back</button>
+</div>
+
+<script>
+/* ------------------- GAME STATE ------------------- */
+let money=500, multiplier=1.0, base=[], baseCapacity=8, subCoins=0;
+let glideToSlotMs=2000, spawnIntervalMs=2500, glideAcrossMs=8000;
+let currentUser=null, guestMode=false;
+const BIN_URL = "https://api.jsonbin.io/v3/b/692b1aa643b1c97be9ccfbb7";
+const API_KEY = "YOUR_JSONBIN_MASTER_KEY";
+
+/* ---------- BRAINROTS ---------- */
+const brainrots = [
+  {name:"Noobini Pizzanini", rarity:"Common", price:25, mps:1, emoji:"🍕"},
+  {name:"Lirili Larilà", rarity:"Common", price:250, mps:3, emoji:"🍋"},
+  {name:"Tim Cheese", rarity:"Common", price:500, mps:5, emoji:"🧀"}
+];
+const byRarity = brainrots.reduce((acc,b)=>{ (acc[b.rarity]||(acc[b.rarity]=[])).push(b); return acc; }, {});
+
+/* ---------- HELPERS ---------- */
+function formatNumber(n){return Math.round(n).toLocaleString();}
+function updateTopBar(){document.getElementById('money').innerText=`Money: ${formatNumber(money)} Lira`; document.getElementById('mps').innerText=`MPS: ${computeMPS()}`; document.getElementById('multiplier').innerText=`Multiplier: ${multiplier.toFixed(2)}`;}
+function computeMPS(){return base.reduce((s,b)=>b?s+b.data.mps*s:0,0)*multiplier;}
+function ensureBaseCapacity(n){while(base.length<n) base.push(null); baseCapacity=n;}
+function renderBaseVisuals(){const baseEl=document.getElementById('base'); baseEl.innerHTML=''; base.forEach((slot,idx)=>{const s=document.createElement('div'); s.className='slot'+(slot?'':' empty'); s.textContent=slot?slot.data.emoji:''; s.dataset.index=idx; s.addEventListener('click',()=>{if(!slot) return; money+=Math.floor(slot.pricePaid/2); base[idx]=null; updateTopBar(); renderBaseVisuals();}); baseEl.appendChild(s);});}
+
+/* ---------- SPAWN ---------- */
+function pickByOdds(){return brainrots[Math.floor(Math.random()*brainrots.length)];}
+function spawnOneBrainrot(initial){
+  const data=initial||pickByOdds();
+  const elem=document.createElement('div'); elem.className='brainrot'; elem.style.left='-160px';
+  const carpet=document.getElementById('carpet'); const y=8+Math.random()*(carpet.offsetHeight-80); elem.style.bottom=(y)+'px';
+  elem.innerHTML=`<div class="rarity">${data.rarity}</div><div class="name">${data.name}</div><div class="mps">${data.mps} MPS</div><div class="price">${data.price} Lira</div><div class="emoji">${data.emoji}</div>`;
+  carpet.appendChild(elem);
+  let buying=false;
+  elem.addEventListener('click',()=>{
+    if(buying) return;
+    const idx=base.findIndex(s=>!s); if(idx===-1){alert('Base full'); return;}
+    if(money<data.price){alert('Not enough money'); return;}
+    buying=true; money-=data.price; updateTopBar();
+    const slotEl=document.querySelectorAll('#base .slot')[idx]; const start=elem.getBoundingClientRect(),end=slotEl.getBoundingClientRect();
+    const dx=(end.left+end.width/2)-(start.left+start.width/2); const dy=(end.top+end.height/2)-(start.top+start.height/2);
+    elem.style.transition=`transform ${glideToSlotMs}ms linear, opacity 150ms`; elem.style.transform=`translate(${dx}px,${dy}px) scale(0.9)`;
+    setTimeout(()=>{ base[idx]={data:data,pricePaid:data.price}; renderBaseVisuals(); elem.remove(); },glideToSlotMs+20);
+  });
+  const startT=performance.now(); function tick(now){const elapsed=now-startT; const p=Math.min(1,elapsed/glideAcrossMs); elem.style.left=(-160+p*(window.innerWidth+240))+'px'; if(p<1) requestAnimationFrame(tick); else if(elem.parentNode) elem.remove();}
+  requestAnimationFrame(tick);
+}
+
+/* ---------- INIT GAME ---------- */
+ensureBaseCapacity(8); renderBaseVisuals(); updateTopBar();
+setInterval(()=>spawnOneBrainrot(),spawnIntervalMs);
+setInterval(()=>{money+=computeMPS(); updateTopBar();},1000);
+
+/* ---------- GUI BUTTONS ---------- */
+document.getElementById('shopBtn').addEventListener('click',()=>{document.getElementById('shopGUI').style.display='block';});
+document.getElementById('rebirthBtn').addEventListener('click',()=>{document.getElementById('rebirthGUI').style.display='block';});
+document.getElementById('wheelBtn').addEventListener('click',()=>{document.getElementById('wheelGUI').style.display='block';});
+document.getElementById('indexBtn').addEventListener('click',()=>{document.getElementById('indexGUI').style.display='block';});
+document.getElementById('ownerBtn').addEventListener('click',()=>{document.getElementById('ownerGUI').style.display='block';});
+function closeShop(){document.getElementById('shopGUI').style.display='none';}
+function closeRebirth(){document.getElementById('rebirthGUI').style.display='none';}
+function closeWheel(){document.getElementById('wheelGUI').style.display='none';}
+function closeIndex(){document.getElementById('indexGUI').style.display='none';}
+function closeOwner(){document.getElementById('ownerGUI').style.display='none';}
+
+/* ---------- LOGIN / CREATE ACCOUNT ---------- */
+async function fetchUsers(){
+  try{
+    const res = await fetch(BIN_URL+"/latest",{headers:{"X-Master-Key":API_KEY}});
+    const data = await res.json();
+    return data.record || {};
+  }catch(e){console.error(e); return {};}
+}
+async function saveUsers(users){
+  try{
+    await fetch(BIN_URL,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":API_KEY},body:JSON.stringify(users)});
+  }catch(e){console.error(e);}
+}
+
+document.getElementById('createAccountBtn').onclick = async ()=>{
+  const u=document.getElementById('username').value.trim();
+  const p=document.getElementById('password').value.trim();
+  if(!u||!p){document.getElementById('loginMsg').innerText="Fill both fields"; return;}
+  const users = await fetchUsers();
+  if(users[u]){document.getElementById('loginMsg').innerText="Username exists"; return;}
+  users[u]={password:p,money:500,subCoins:0};
+  await saveUsers(users);
+  document.getElementById('loginMsg').style.color="green";
+  document.getElementById('loginMsg').innerText="Account created! Log in now.";
+};
+document.getElementById('loginBtn').onclick = async ()=>{
+  const u=document.getElementById('username').value.trim();
+  const p=document.getElementById('password').value.trim();
+  const users = await fetchUsers();
+  if(users[u]&&users[u].password===p){currentUser=u; money=users[u].money; subCoins=users[u].subCoins; guestMode=false; showGamePage(); updateTopBar(); document.getElementById('loginMsg').innerText=""; } 
+  else {document.getElementById('loginMsg').style.color="red"; document.getElementById('loginMsg').innerText="Invalid username/password";}
+};
+document.getElementById('guestBtn').onclick = ()=>{
+  guestMode=true;
+  currentUser="Guest";
+  money=500;
+  subCoins=0;
+  showGamePage();
+  updateTopBar();
+};
+
+/* ---------- SHOW / HIDE PAGES ---------- */
+function showGamePage(){document.getElementById('loginPage').style.display='none'; document.getElementById('gamePage').style.display='block'; document.getElementById('leaderboardPage').style.display='none';}
+function showLeaderboardPage(){document.getElementById('loginPage').style.display='none'; document.getElementById('gamePage').style.display='none'; document.getElementById('leaderboardPage').style.display='block';}
+
+/* ---------- LEADERBOARD ---------- */
+document.getElementById('leaderboardBtn').onclick = async ()=>{
+  const users = await fetchUsers();
+  const list = Object.entries(users).map(([name,data])=>({name,money:data.money||0})).sort((a,b)=>b.money-a.money);
+  const container=document.getElementById('leaderboardList');
+  container.innerHTML="";
+  list.forEach(u=>{const div=document.createElement('div'); div.className='leaderboardItem'; div.innerText=`${u.name}: ${u.money} Lira`; container.appendChild(div);});
+  showLeaderboardPage();
+};
+
+/* ---------- GOOGLE SIGN-IN ---------- */
+function handleCredentialResponse(response) {
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  currentUser = payload.email;
+  money = 500;
+  subCoins = 0;
+  guestMode = false;
+  showGamePage();
+  updateTopBar();
+}
+window.onload = function () {
+  google.accounts.id.initialize({
+    client_id: 'YOUR_GOOGLE_CLIENT_ID',
+    callback: handleCredentialResponse
+  });
+  google.accounts.id.renderButton(
+    document.querySelector('.g_id_signin'),
+    { theme: 'outline', size: 'large' }
+  );
+  google.accounts.id.prompt();
+}
+</script>
+</body>
+</html>
+==============
